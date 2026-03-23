@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InferenceIQ — Dashboard Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f7f7f8; color: #1a1a1a; }
+
+  /* Header */
+  .header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-size: 20px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.5px; }
+  .logo span { color: #2563eb; }
+  .tabs { display: flex; gap: 0; }
+  .tab { padding: 8px 20px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; border: 1px solid #e5e5e5; background: #fff; }
+  .tab:first-child { border-radius: 8px 0 0 8px; }
+  .tab:last-child { border-radius: 0 8px 8px 0; border-left: none; }
+  .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .sync { font-size: 13px; color: #6b7280; display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 24px 32px; }
+  .stat-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 20px; }
+  .stat-label { font-size: 12px; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: #0a0a0a; }
+  .stat-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+  /* Main layout */
+  .main { display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 0 32px 32px; }
+
+  /* Table panel */
+  .table-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden; }
+  .table-toolbar { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; gap: 12px; align-items: center; }
+  .search-input { padding: 8px 12px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 13px; width: 220px; background: #f9fafb; color: #1a1a1a; }
+  .filter-btn { padding: 8px 14px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 13px; background: #fff; color: #374151; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 12px 20px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f0f0f0; background: #f9fafb; }
+  td { padding: 14px 20px; font-size: 14px; border-bottom: 1px solid #f5f5f5; }
+  tr:hover { background: #f9fafb; }
+  .model-name { font-weight: 600; color: #0a0a0a; }
+  .model-provider { font-size: 12px; color: #6b7280; }
+  .price { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: #0a0a0a; }
+  .price-low { color: #16a34a; font-weight: 600; }
+  .ctx { color: #6b7280; font-size: 13px; }
+  .provider-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #f0f7ff; color: #2563eb; }
+  .quality-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .quality-frontier { background: #fef3c7; color: #92400e; }
+  .quality-strong { background: #dbeafe; color: #1e40af; }
+  .quality-good { background: #f0fdf4; color: #166534; }
+  .quality-budget { background: #f3f4f6; color: #6b7280; }
+  .pagination { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6b7280; border-top: 1px solid #f0f0f0; }
+  .page-btns { display: flex; gap: 4px; }
+  .page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e5e5; border-radius: 6px; font-size: 13px; background: #fff; color: #374151; }
+  .page-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+  /* Sidebar */
+  .sidebar { display: flex; flex-direction: column; gap: 20px; }
+  .calc-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 24px; }
+  .calc-title { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .calc-field { margin-bottom: 16px; }
+  .calc-label { font-size: 12px; font-weight: 500; color: #6b7280; margin-bottom: 6px; }
+  .calc-input { width: 100%; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 14px; background: #f9fafb; color: #0a0a0a; }
+  .calc-select { width: 100%; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 14px; background: #f9fafb; color: #0a0a0a; appearance: auto; }
+  .calc-divider { height: 1px; background: #e5e5e5; margin: 20px 0; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+  .result-label { font-size: 13px; color: #6b7280; }
+  .result-value { font-size: 15px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .result-api { color: #2563eb; }
+  .result-gpu { color: #7c3aed; }
+  .result-detail { font-size: 11px; color: #9ca3af; }
+  .verdict { margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .verdict-text { font-size: 14px; font-weight: 600; color: #16a34a; }
+  .verdict-sub { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .breakeven-label { font-size: 12px; color: #6b7280; margin-top: 12px; }
+  .breakeven-value { font-size: 20px; font-weight: 700; color: #0a0a0a; }
+
+  /* Quick compare panel */
+  .compare-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 20px; }
+  .compare-title { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+  .compare-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5; }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-model { font-size: 13px; font-weight: 500; }
+  .compare-price { font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; color: #16a34a; font-weight: 600; }
+
+  /* Footer */
+  .footer { padding: 16px 32px; border-top: 1px solid #e5e5e5; background: #fff; display: flex; justify-content: space-between; font-size: 12px; color: #9ca3af; margin-top: 8px; }
+
+  .sort-arrow { font-size: 10px; color: #2563eb; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">Inference<span>IQ</span></div>
+  <div class="tabs">
+    <div class="tab active">API Pricing</div>
+    <div class="tab">GPU Offers</div>
+  </div>
+  <div class="sync"><span class="sync-dot"></span> Synced 2 min ago</div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-label">API Models</div>
+    <div class="stat-value">342</div>
+    <div class="stat-sub">across 14 providers</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">GPU Offers</div>
+    <div class="stat-value">1,247</div>
+    <div class="stat-sub">from Vast.ai marketplace</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Cheapest API / 1M tokens</div>
+    <div class="stat-value" style="color: #16a34a;">$0.10</div>
+    <div class="stat-sub">Gemini 2.0 Flash (input)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Cheapest H100 / hr</div>
+    <div class="stat-value" style="color: #7c3aed;">$0.19</div>
+    <div class="stat-sub">Vast.ai &middot; US-East &middot; 99.2% reliability</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="table-toolbar">
+      <input class="search-input" placeholder="Search models..." value="" />
+      <button class="filter-btn">Provider &#x25BE;</button>
+      <button class="filter-btn">Quality &#x25BE;</button>
+      <button class="filter-btn">Context &#x25BE;</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Input / 1M <span class="sort-arrow">&#x25B2;</span></th>
+          <th>Output / 1M</th>
+          <th>Quality</th>
+          <th>Context</th>
+          <th>Provider</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="model-name">Gemini 2.0 Flash</div><div class="model-provider">google/gemini-2.0-flash-001</div></td>
+          <td><span class="price price-low">$0.10</span></td>
+          <td><span class="price">$0.40</span></td>
+          <td><span class="quality-badge quality-strong">Strong</span></td>
+          <td class="ctx">1M</td>
+          <td><span class="provider-badge">Google</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">DeepSeek V3</div><div class="model-provider">deepseek/deepseek-chat-v3</div></td>
+          <td><span class="price price-low">$0.15</span></td>
+          <td><span class="price">$0.30</span></td>
+          <td><span class="quality-badge quality-strong">Strong</span></td>
+          <td class="ctx">128K</td>
+          <td><span class="provider-badge">DeepSeek</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">GPT-4o Mini</div><div class="model-provider">openai/gpt-4o-mini</div></td>
+          <td><span class="price price-low">$0.15</span></td>
+          <td><span class="price">$0.60</span></td>
+          <td><span class="quality-badge quality-good">Good</span></td>
+          <td class="ctx">128K</td>
+          <td><span class="provider-badge">OpenAI</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">Llama 3.3 70B</div><div class="model-provider">meta-llama/llama-3.3-70b</div></td>
+          <td><span class="price">$0.18</span></td>
+          <td><span class="price">$0.22</span></td>
+          <td><span class="quality-badge quality-strong">Strong</span></td>
+          <td class="ctx">32K</td>
+          <td><span class="provider-badge">Meta</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">Qwen 2.5 72B</div><div class="model-provider">qwen/qwen-2.5-72b-instruct</div></td>
+          <td><span class="price">$0.20</span></td>
+          <td><span class="price">$0.28</span></td>
+          <td><span class="quality-badge quality-strong">Strong</span></td>
+          <td class="ctx">32K</td>
+          <td><span class="provider-badge">Qwen</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">Claude Sonnet 4</div><div class="model-provider">anthropic/claude-sonnet-4</div></td>
+          <td><span class="price">$3.00</span></td>
+          <td><span class="price">$15.00</span></td>
+          <td><span class="quality-badge quality-frontier">Frontier</span></td>
+          <td class="ctx">200K</td>
+          <td><span class="provider-badge">Anthropic</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">GPT-4o</div><div class="model-provider">openai/gpt-4o</div></td>
+          <td><span class="price">$2.50</span></td>
+          <td><span class="price">$10.00</span></td>
+          <td><span class="quality-badge quality-frontier">Frontier</span></td>
+          <td class="ctx">128K</td>
+          <td><span class="provider-badge">OpenAI</span></td>
+        </tr>
+        <tr>
+          <td><div class="model-name">Mistral Large</div><div class="model-provider">mistralai/mistral-large-latest</div></td>
+          <td><span class="price">$2.00</span></td>
+          <td><span class="price">$6.00</span></td>
+          <td><span class="quality-badge quality-strong">Strong</span></td>
+          <td class="ctx">128K</td>
+          <td><span class="provider-badge">Mistral</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pagination">
+      <span>Showing 1–8 of 342 models</span>
+      <div class="page-btns">
+        <div class="page-btn active">1</div>
+        <div class="page-btn">2</div>
+        <div class="page-btn">3</div>
+        <div class="page-btn">...</div>
+        <div class="page-btn">43</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="calc-panel">
+      <div class="calc-title">Breakeven Calculator</div>
+      <div class="calc-field">
+        <div class="calc-label">Tokens per day</div>
+        <input class="calc-input" value="10,000,000" />
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Latency requirement</div>
+        <select class="calc-select">
+          <option>&lt; 500ms (interactive)</option>
+          <option>&lt; 2s (batch-ok)</option>
+          <option>No requirement</option>
+        </select>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Min. quality</div>
+        <select class="calc-select">
+          <option>Strong (recommended)</option>
+          <option>Frontier</option>
+          <option>Good</option>
+          <option>Budget</option>
+          <option>Any</option>
+        </select>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Compare model</div>
+        <select class="calc-select">
+          <option>Best value at tier (DeepSeek V3)</option>
+          <option>Gemini 2.0 Flash</option>
+          <option>Llama 3.3 70B</option>
+        </select>
+      </div>
+      <div class="calc-divider"></div>
+      <div class="result-row">
+        <div>
+          <div class="result-label">API cost</div>
+          <div class="result-detail">DeepSeek V3 via OpenRouter (Strong)</div>
+        </div>
+        <div class="result-value result-api">$45/day</div>
+      </div>
+      <div class="result-row">
+        <div>
+          <div class="result-label">Self-host cost</div>
+          <div class="result-detail">H100 SXM on Vast.ai &middot; US-East</div>
+        </div>
+        <div class="result-value result-gpu">$4.56/day</div>
+      </div>
+      <div class="calc-divider"></div>
+      <div class="breakeven-label">Breakeven point</div>
+      <div class="breakeven-value">2.1M tokens/day</div>
+      <div class="verdict">
+        <div class="verdict-text">Self-hosting saves ~90%</div>
+        <div class="verdict-sub">At your volume, GPU rental saves $40.44/day ($1,213/mo)</div>
+      </div>
+    </div>
+
+    <div class="compare-panel">
+      <div class="compare-title">Cheapest models right now</div>
+      <div class="compare-row">
+        <span class="compare-model">Gemini 2.0 Flash</span>
+        <span class="compare-price">$0.10/1M in</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-model">DeepSeek V3</span>
+        <span class="compare-price">$0.15/1M in</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-model">GPT-4o Mini</span>
+        <span class="compare-price">$0.15/1M in</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-model">Llama 3.3 70B</span>
+        <span class="compare-price">$0.18/1M in</span>
+      </div>
+      <div class="compare-row">
+        <span class="compare-model">Qwen 2.5 72B</span>
+        <span class="compare-price">$0.20/1M in</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <span>Data sources: OpenRouter API &middot; Vast.ai Marketplace</span>
+  <span>Last full sync: March 23, 2026 14:32 UTC</span>
+</div>
+
+</body>
+</html>
