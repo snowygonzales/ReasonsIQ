@@ -25,23 +25,23 @@ LLM cost intelligence platform — aggregates API pricing, GPU compute costs, an
 
 ## Milestones
 
-### Milestone 1 — Data Pipeline (Day 1)
+### Milestone 1 — Data Pipeline (Day 1) ✓
 - [x] Project scaffold (Next.js 15, TypeScript, Tailwind 4, SQLite)
 - [x] DB schema: `api_models`, `gpu_offers`, `sync_log` tables with indexes
-- [x] OpenRouter importer: fetch, normalize, upsert (347 models, 0 errors)
+- [x] OpenRouter importer: fetch, normalize, upsert (347 models)
+- [x] Vast.ai importer: fetch, normalize, upsert (393 GPU offers, 19 GPU types)
 - [x] Quality tier mapping (curated patterns + param-size heuristic fallback)
-- [x] Seed script (`npm run seed`) to run importers on demand
-- [ ] Vast.ai importer: fetch, normalize, upsert
-- [ ] Data validation + scheduled polling (node-cron: OpenRouter 6h, Vast.ai 1h)
+- [x] Seed script (`npm run seed`) to run both importers on demand
+- [ ] Scheduled polling (node-cron: OpenRouter 6h, Vast.ai 1h) — deferred
 
-### Milestone 2 — Dashboard + Calculator (Day 2)
-- [ ] API routes: `GET /api/models`, `GET /api/gpus` with filtering/sorting
-- [ ] Dashboard page: stats bar, tabbed tables (API Pricing / GPU Offers)
-- [ ] Quality tier column with color-coded badges
-- [ ] Search, provider filter, quality filter, pagination
-- [ ] Breakeven calculator sidebar (tokens/day, latency, min quality, model picker)
-- [ ] Breakeven calculation logic (API cost vs GPU self-host cost)
-- [ ] Data freshness indicators + last sync timestamps
+### Milestone 2 — Dashboard + Calculator (Day 2) ✓
+- [x] API routes: `GET /api/models`, `GET /api/gpus`, `GET /api/stats`, `GET /api/breakeven`
+- [x] Dashboard page: stats bar, tabbed tables (API Pricing / GPU Offers)
+- [x] Quality tier column with color-coded badges (Frontier/Strong/Good/Budget)
+- [x] Search, provider filter, quality filter, column sorting, pagination
+- [x] Breakeven calculator sidebar (tokens/day, min quality, server-side computation)
+- [x] Breakeven calculation logic (cheapest API at quality tier vs cheapest H100)
+- [x] Data freshness indicators + last sync timestamps
 
 ## Commands
 
@@ -55,9 +55,21 @@ npm run seed      # Run data importers (OpenRouter, Vast.ai)
 ## Directory Structure
 
 ```
-design/           # Mockups, design docs, visual references
-src/              # Application source (Next.js App Router)
-  app/            # Pages and API routes
-  lib/            # Shared utilities, data fetchers, DB
-  components/     # React components
+design/                    # Mockups, design docs, visual references
+src/
+  app/
+    page.tsx               # Dashboard (stats, tables, calculator)
+    layout.tsx             # Root layout
+    api/
+      models/route.ts      # GET /api/models — API pricing with filtering
+      gpus/route.ts        # GET /api/gpus — GPU offers with filtering
+      stats/route.ts       # GET /api/stats — summary stats
+      breakeven/route.ts   # GET /api/breakeven — calculator logic
+  lib/
+    db.ts                  # SQLite connection + schema init
+    quality-tiers.ts       # Model → quality tier mapping
+    seed.ts                # Run all importers
+    importers/
+      openrouter.ts        # OpenRouter API → api_models
+      vastai.ts            # Vast.ai API → gpu_offers
 ```
