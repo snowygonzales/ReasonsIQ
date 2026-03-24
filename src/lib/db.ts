@@ -1,7 +1,9 @@
 import Database from "better-sqlite3";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "reasonsiq.db");
+// Use persistent volume in production (Railway), local file in dev
+const DB_DIR = process.env.DB_PATH || process.cwd();
+const DB_PATH = path.join(DB_DIR, "reasonsiq.db");
 
 let _db: Database.Database | null = null;
 
