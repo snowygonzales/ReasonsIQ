@@ -9,7 +9,8 @@ AI spend optimization platform — helps enterprises understand whether they're 
 - **Database**: SQLite (via better-sqlite3) for MVP, migrate to PostgreSQL later
 - **AI**: Anthropic Claude API (Haiku for intake analysis)
 - **Scheduling**: node-cron for data pipeline polling
-- **Deployment**: Vercel (frontend) + Hetzner VPS (API/DB)
+- **Deployment**: Railway (Docker, standalone Next.js output)
+- **Domain**: www.reasonsiq.com (CNAME → Railway, root forwards via GoDaddy)
 
 ## Data Sources
 
@@ -66,7 +67,7 @@ AI spend optimization platform — helps enterprises understand whether they're 
 **Goal:** Make canceling feel like losing something valuable.
 
 #### 2a — User Accounts & Firm Profiles
-- [ ] Auth (email/password or magic link)
+- [x] Auth (email/password with JWT + httpOnly cookies)
 - [ ] **Firm profile** — persists company name, industry, team size, current AI stack
 - [ ] Profile auto-populates intake form on return visits
 - [ ] "Your firm" dashboard — personalized view, not generic calculator
@@ -107,7 +108,7 @@ AI spend optimization platform — helps enterprises understand whether they're 
 - [ ] Actual spend integration (connect Azure/AWS/API billing)
 
 ### Phase 4 — Public Launch
-- [ ] Production deployment (Vercel frontend + Hetzner VPS backend)
+- [x] Production deployment (Railway, Docker, custom domain)
 - [ ] SEO landing page + blog
 - [ ] "AI Spend Index" weekly newsletter
 - [ ] Founder-led outreach (LinkedIn, HN, legal tech communities, health IT)
@@ -134,6 +135,8 @@ npm run seed      # Run data importers (OpenRouter, Vast.ai)
 
 ```
 design/                    # Mockups, design docs, visual references
+Dockerfile                 # Multi-stage Docker build (standalone Next.js)
+railway.toml               # Railway deployment config
 src/
   instrumentation.ts       # Next.js hook — starts scheduler on server boot
   app/
@@ -147,7 +150,16 @@ src/
       stats/route.ts       # GET /api/stats — summary stats
       breakeven/route.ts   # GET /api/breakeven — simple calculator (legacy)
       scenario/route.ts    # GET /api/scenario — full 3-way comparison
+      scenarios/route.ts   # GET/POST /api/scenarios — saved scenarios
+      firms/route.ts       # GET/POST /api/firms — firm profiles
+      auth/
+        register/route.ts  # POST /api/auth/register
+        login/route.ts     # POST /api/auth/login
+        logout/route.ts    # POST /api/auth/logout
+        me/route.ts        # GET /api/auth/me — current user
   lib/
+    auth.ts                # JWT auth helpers (hash, verify, cookies)
+    auth-context.tsx       # React auth context provider
     db.ts                  # SQLite connection + schema init
     quality-tiers.ts       # Model → quality tier mapping
     industry-templates.ts  # Industry configs, competitor pricing, token math
