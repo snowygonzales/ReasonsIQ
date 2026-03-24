@@ -132,6 +132,15 @@ npm run seed      # Run data importers (OpenRouter, Vast.ai)
 
 **Important:** Always restart the dev server (`npm run dev`) after major changes or commits. Clear the `.next` cache first if you encounter stale module errors: `rm -rf .next && npm run dev`.
 
+### Windows local dev (known limitation)
+
+The project was built on Mac. Running the dev server on Windows requires:
+- **Visual Studio Build Tools** — `better-sqlite3` needs native C++ compilation
+- **Node LTS (v20/v22)** — Node v24 has no prebuilt binaries for `better-sqlite3`
+- **`npm install`** (not `--ignore-scripts`) to compile native addons
+
+Without these, `npm run dev` will fail. Use `npm install --ignore-scripts` to restore `node_modules` for non-server tasks (git, linting, etc.). Primary development happens on Mac; deployment is verified via Railway.
+
 ## Directory Structure
 
 ```
