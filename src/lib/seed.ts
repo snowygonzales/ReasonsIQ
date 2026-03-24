@@ -3,7 +3,7 @@ import { importVastai } from "./importers/vastai";
 import { getDb } from "./db";
 
 async function seed() {
-  console.log("=== InferenceIQ Data Seed ===\n");
+  console.log("=== ReasonsIQ Data Seed ===\n");
 
   // Ensure DB is initialized
   getDb();
