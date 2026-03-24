@@ -11,6 +11,7 @@ AI spend optimization platform — helps enterprises understand whether they're 
 - **Scheduling**: node-cron for data pipeline polling
 - **Deployment**: Railway (Docker, standalone Next.js output)
 - **Domain**: www.reasonsiq.com (CNAME → Railway, root forwards via GoDaddy)
+- **Dev Gate**: HTTP Basic Auth via `DEV_GATE_USER` / `DEV_GATE_PASS` env vars (inactive when unset)
 
 ## Data Sources
 
@@ -138,11 +139,13 @@ design/                    # Mockups, design docs, visual references
 Dockerfile                 # Multi-stage Docker build (standalone Next.js)
 railway.toml               # Railway deployment config
 src/
+  middleware.ts             # Dev gate — Basic Auth when DEV_GATE_USER/PASS are set
   instrumentation.ts       # Next.js hook — starts scheduler on server boot
   app/
     page.tsx               # Homepage: AI intake → results → advanced builder
     layout.tsx             # Root layout
     globals.css            # Global styles
+    healthz/route.ts       # GET /healthz — Railway healthcheck (bypasses auth)
     api/
       analyze/route.ts     # POST /api/analyze — Claude AI intake analysis
       models/route.ts      # GET /api/models — API pricing with filtering
