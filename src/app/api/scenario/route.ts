@@ -13,10 +13,47 @@ type GpuRow = {
 const TIER_RANK: Record<string, number> = { Frontier: 4, Strong: 3, Good: 2, Budget: 1 };
 
 // Owned hardware constants
-const H100_PURCHASE_PRICE = 30_000;
-const H100_AMORTIZATION_MONTHS = 36;
+const AMORTIZATION_MONTHS = 24; // industry standard for AI hardware CapEx
 const POWER_COLO_PER_HOUR = 0.50;
 const ENGINEERING_OVERHEAD_PER_PERSON = 500; // $/month ops time per team member
+
+// Approximate retail purchase prices per GPU (USD)
+const GPU_PURCHASE_PRICE: Record<string, number> = {
+  "H200":        35_000,
+  "B200":        40_000,
+  "H100 SXM":    30_000,
+  "H100 PCIe":   25_000,
+  "H100 NVL":    30_000,
+  "H100":        30_000,
+  "A100 SXM":    15_000,
+  "A100 PCIe":   10_000,
+  "A100 PCIE":   10_000,
+  "A100":        10_000,
+  "A100X":       12_000,
+  "L40S":         8_000,
+  "L40":          7_000,
+  "L4":           2_500,
+  "A40":          5_000,
+  "A30":          3_500,
+  "A10":          2_000,
+  "RTX A6000":    4_500,
+  "RTX A5000":    2_500,
+  "RTX A4000":    1_000,
+  "RTX 5090":     2_000,
+  "RTX 4090":     1_600,
+  "RTX 3090 Ti":  1_500,
+  "RTX 3090":     1_300,
+};
+
+function getGpuPurchasePrice(gpuModel: string): number {
+  // Exact match first
+  if (GPU_PURCHASE_PRICE[gpuModel]) return GPU_PURCHASE_PRICE[gpuModel];
+  // Partial match (e.g., "H100 SXM" matches "H100")
+  for (const [key, price] of Object.entries(GPU_PURCHASE_PRICE)) {
+    if (gpuModel.includes(key) || key.includes(gpuModel)) return price;
+  }
+  return 5_000; // fallback for unknown GPUs
+}
 
 // GPU throughput estimates (tokens/day per GPU, accounting for batching and realistic load)
 // These vary by model quality — larger models run slower on the same hardware
@@ -102,7 +139,9 @@ function computeScenario(
   const rentedMonthlyCost = rentedUtilAdjusted + rentedOverhead;
 
   // Owned hardware: amortized purchase × GPUs + power/colo × GPUs + engineering
-  const ownedAmortized = (H100_PURCHASE_PRICE / H100_AMORTIZATION_MONTHS) * numGpus;
+  const gpuPrice = getGpuPurchasePrice(gpu.gpu_model);
+  const ownedPerGpuMonthly = gpuPrice / AMORTIZATION_MONTHS;
+  const ownedAmortized = ownedPerGpuMonthly * numGpus;
   const ownedPowerColo = POWER_COLO_PER_HOUR * 24 * 30 * numGpus;
   const ownedOverhead = teamSize * ENGINEERING_OVERHEAD_PER_PERSON;
   const ownedMonthlyCost = ownedAmortized + ownedPowerColo + ownedOverhead;
@@ -125,6 +164,10 @@ function computeScenario(
       monthly_cost: ownedMonthlyCost,
       daily_cost: ownedMonthlyCost / 30,
       amortized_hw: ownedAmortized,
+      per_gpu_monthly: ownedPerGpuMonthly,
+      per_gpu_price: gpuPrice,
+      upfront_cost: gpuPrice * numGpus,
+      amortization_months: AMORTIZATION_MONTHS,
       power_colo: ownedPowerColo,
       overhead: ownedOverhead,
       gpu_count: numGpus,
@@ -143,6 +186,8 @@ export async function GET(request: NextRequest) {
   const utilization = Math.max(0.1, Math.min(1, parseFloat(params.get("utilization") || "0.7")));
   const modelId = params.get("modelId") || undefined;
   const gpuId = params.get("gpuId") || undefined;
+  const currentSpend = parseFloat(params.get("currentSpend") || "0");
+  const currentProduct = params.get("currentProduct") || "";
 
   const model = findBestModel(db, quality, modelId);
   const gpu = findBestGpu(db, gpuId);
@@ -164,8 +209,14 @@ export async function GET(request: NextRequest) {
   const maxCost = costs[2].cost;
   const savingsVsMax = maxCost > 0 ? ((maxCost - costs[0].cost) / maxCost) * 100 : 0;
 
+  // Savings vs current spend
+  const bestAlternativeCost = Math.min(options.cloud_api.monthly_cost, options.rented_gpu.monthly_cost, options.owned_hardware.monthly_cost);
+  const savingsVsCurrent = currentSpend > 0 ? ((currentSpend - bestAlternativeCost) / currentSpend) * 100 : 0;
+
   return NextResponse.json({
     inputs: { tokens_per_day: tokensPerDay, input_ratio: inputRatio, quality, team_size: teamSize, utilization },
+    current: currentSpend > 0 ? { product: currentProduct, monthly_spend: currentSpend } : null,
+    savings_vs_current: currentSpend > 0 ? savingsVsCurrent : null,
     model: {
       id: model.id,
       name: model.model_name,
