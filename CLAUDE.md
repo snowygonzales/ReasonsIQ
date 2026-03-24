@@ -23,25 +23,57 @@ LLM cost intelligence platform — aggregates API pricing, GPU compute costs, an
 - Design: light mode, Stripe-clean aesthetic, blue (#2563eb) accent.
 - Layout: tabbed (API Pricing / GPU Offers) + breakeven calculator sidebar.
 
-## Milestones
+## Roadmap
 
-### Milestone 1 — Data Pipeline (Day 1) ✓
-- [x] Project scaffold (Next.js 15, TypeScript, Tailwind 4, SQLite)
-- [x] DB schema: `api_models`, `gpu_offers`, `sync_log` tables with indexes
-- [x] OpenRouter importer: fetch, normalize, upsert (347 models)
-- [x] Vast.ai importer: fetch, normalize, upsert (393 GPU offers, 19 GPU types)
-- [x] Quality tier mapping (curated patterns + param-size heuristic fallback)
-- [x] Seed script (`npm run seed`) to run both importers on demand
-- [ ] Scheduled polling (node-cron: OpenRouter 6h, Vast.ai 1h) — deferred
+### Phase 0 — Data Pipeline Validation (~70% done)
+- [x] OpenRouter importer (347 models)
+- [x] Vast.ai importer (392 GPU offers, 19 GPU types)
+- [x] Scheduled polling (node-cron: OpenRouter 6h, Vast.ai 1h)
+- [x] Quality tier mapping (curated patterns + param-size heuristic)
+- [x] Seed script (`npm run seed`)
+- [ ] Shadeform API integration (30+ GPU providers)
+- [ ] Apify GPU Monitor integration
+- [ ] Scraping fallbacks for provider pricing pages
+- [ ] Historical price storage (DB currently upserts, needs append-only history)
+- [ ] Data validation pipeline (cross-check against official pricing pages)
 
-### Milestone 2 — Dashboard + Calculator (Day 2) ✓
-- [x] API routes: `GET /api/models`, `GET /api/gpus`, `GET /api/stats`, `GET /api/breakeven`
-- [x] Dashboard page: stats bar, tabbed tables (API Pricing / GPU Offers)
-- [x] Quality tier column with color-coded badges (Frontier/Strong/Good/Budget)
+### Phase 1 — MVP Product (~40% done)
+- [x] Live pricing dashboard (API + GPU tables, stats bar)
+- [x] Breakeven calculator (API vs GPU, server-side)
+- [x] Row selection feeds into calculator
 - [x] Search, provider filter, quality filter, column sorting, pagination
-- [x] Breakeven calculator sidebar (tokens/day, min quality, server-side computation)
-- [x] Breakeven calculation logic (cheapest API at quality tier vs cheapest H100)
 - [x] Data freshness indicators + last sync timestamps
+- [ ] **Scenario Builder** — full workload profiling
+  - [ ] Inputs: tokens/day, latency SLA, compliance needs, team size
+  - [ ] Side-by-side: cloud API vs rented GPU vs owned metal
+  - [ ] Utilization rates, engineering overhead multipliers
+  - [ ] Scaling curves / projection charts
+- [ ] Prompt caching discounts, batch API rates, volume tiers
+- [ ] Model benchmarks (HuggingFace Leaderboard via Parquet)
+  - [ ] Quality-adjusted cost metric ($/benchmark-point)
+- [ ] Multi-GPU provider comparison (beyond Vast.ai)
+- [ ] Recharts visualizations (cost comparison charts)
+
+### Phase 2 — Monetization
+- [ ] Auth (email/password)
+- [ ] Stripe subscriptions (€99 Pro / €199 Team / €299 Enterprise)
+- [ ] 15-day free trial flow (full Team access)
+- [ ] Tier-gated features
+- [ ] PDF/XLSX export of scenarios
+- [ ] Shareable scenario links
+
+### Phase 3 — Public Launch
+- [ ] Production deployment (Vercel frontend + Hetzner VPS backend)
+- [ ] SEO landing page + blog
+- [ ] "Inference Price Index" weekly newsletter
+- [ ] Founder-led outreach (LinkedIn, HN, MLOps communities)
+
+### Phase 4 — Retention Features (post-launch)
+- [ ] Historical price charts + trend analysis
+- [ ] Price change alerts (email + Slack)
+- [ ] News & trends feed (provider blogs, HuggingFace, RSS)
+- [ ] Team workspaces (shared scenarios, RBAC)
+- [ ] Slack bot ("cheapest way to serve 10M tokens/day?")
 
 ## Commands
 
@@ -57,9 +89,11 @@ npm run seed      # Run data importers (OpenRouter, Vast.ai)
 ```
 design/                    # Mockups, design docs, visual references
 src/
+  instrumentation.ts       # Next.js hook — starts scheduler on server boot
   app/
     page.tsx               # Dashboard (stats, tables, calculator)
     layout.tsx             # Root layout
+    globals.css            # Global styles
     api/
       models/route.ts      # GET /api/models — API pricing with filtering
       gpus/route.ts        # GET /api/gpus — GPU offers with filtering
@@ -68,6 +102,7 @@ src/
   lib/
     db.ts                  # SQLite connection + schema init
     quality-tiers.ts       # Model → quality tier mapping
+    scheduler.ts           # node-cron jobs (OpenRouter 6h, Vast.ai 1h)
     seed.ts                # Run all importers
     importers/
       openrouter.ts        # OpenRouter API → api_models

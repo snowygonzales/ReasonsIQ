@@ -89,6 +89,10 @@ export default function Dashboard() {
   const [gpuSort, setGpuSort] = useState("price_per_hour");
   const [gpuOrder, setGpuOrder] = useState<"asc" | "desc">("asc");
 
+  // Row selection
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [selectedGpuId, setSelectedGpuId] = useState<number | null>(null);
+
   // Breakeven calculator
   const [tokensPerDay, setTokensPerDay] = useState("10000000");
   const [calcQuality, setCalcQuality] = useState("Strong");
@@ -170,8 +174,10 @@ export default function Dashboard() {
     const tokens = parseInt(tokensPerDay.replace(/,/g, "")) || 0;
     if (tokens <= 0) return;
     const p = new URLSearchParams({ quality: calcQuality, tokens: String(tokens) });
+    if (selectedModelId) p.set("modelId", selectedModelId);
+    if (selectedGpuId !== null) p.set("gpuId", String(selectedGpuId));
     fetch(`/api/breakeven?${p}`).then((r) => r.ok ? r.json() : null).then(setBreakeven);
-  }, [tokensPerDay, calcQuality]);
+  }, [tokensPerDay, calcQuality, selectedModelId, selectedGpuId]);
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
@@ -280,7 +286,11 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {models.map((m) => (
-                    <tr key={m.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <tr
+                      key={m.id}
+                      onClick={() => setSelectedModelId(selectedModelId === m.id ? null : m.id)}
+                      className={`border-t border-gray-50 cursor-pointer transition-colors ${selectedModelId === m.id ? "bg-blue-50 border-l-2 border-l-blue-600" : "hover:bg-gray-50"}`}
+                    >
                       <td className="px-5 py-3">
                         <div className="font-semibold text-sm">{m.model_name}</div>
                         <div className="text-xs text-gray-400">{m.id}</div>
@@ -366,7 +376,11 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {gpus.map((g) => (
-                    <tr key={g.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <tr
+                      key={g.id}
+                      onClick={() => setSelectedGpuId(selectedGpuId === g.id ? null : g.id)}
+                      className={`border-t border-gray-50 cursor-pointer transition-colors ${selectedGpuId === g.id ? "bg-blue-50 border-l-2 border-l-blue-600" : "hover:bg-gray-50"}`}
+                    >
                       <td className="px-5 py-3">
                         <div className="font-semibold text-sm">{g.gpu_model}</div>
                         <div className="text-xs text-gray-400">{g.gpu_count > 1 ? `${g.gpu_count}x` : ""}</div>
@@ -421,7 +435,17 @@ export default function Dashboard() {
         {/* Sidebar — Breakeven Calculator */}
         <div className="space-y-5">
           <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-sm font-bold uppercase tracking-wide mb-5">Breakeven Calculator</h3>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-bold uppercase tracking-wide">Breakeven Calculator</h3>
+              {(selectedModelId || selectedGpuId !== null) && (
+                <button
+                  onClick={() => { setSelectedModelId(null); setSelectedGpuId(null); }}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Clear selection
+                </button>
+              )}
+            </div>
 
             <div className="space-y-4">
               <div>
