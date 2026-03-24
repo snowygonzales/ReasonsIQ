@@ -4,7 +4,7 @@ LLM cost intelligence platform — aggregates API pricing, GPU compute costs, an
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14+ (App Router), TypeScript, Tailwind CSS
+- **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS
 - **Backend**: Next.js API routes (same repo)
 - **Database**: SQLite (via better-sqlite3) for MVP, migrate to PostgreSQL later
 - **Scheduling**: node-cron for data pipeline polling
@@ -20,14 +20,15 @@ LLM cost intelligence platform — aggregates API pricing, GPU compute costs, an
 - Keep it simple. MVP mentality — no over-engineering.
 - All prices stored in USD.
 - Quality tiers: Frontier / Strong / Good / Budget (curated, not computed).
+- VRAM requirements by tier: Frontier 80GB+, Strong 40GB+, Good 16GB+, Budget 8GB+.
 - Design: light mode, Stripe-clean aesthetic, blue (#2563eb) accent.
-- Layout: tabbed (API Pricing / GPU Offers) + breakeven calculator sidebar.
+- Layout: Quick Scenarios → Cost Comparison → Advanced Scenario Builder.
 
 ## Roadmap
 
 ### Phase 0 — Data Pipeline Validation (~70% done)
-- [x] OpenRouter importer (347 models)
-- [x] Vast.ai importer (392 GPU offers, 19 GPU types)
+- [x] OpenRouter importer (320+ models)
+- [x] Vast.ai importer (380+ GPU offers, 19 GPU types)
 - [x] Scheduled polling (node-cron: OpenRouter 6h, Vast.ai 1h)
 - [x] Quality tier mapping (curated patterns + param-size heuristic)
 - [x] Seed script (`npm run seed`)
@@ -37,17 +38,24 @@ LLM cost intelligence platform — aggregates API pricing, GPU compute costs, an
 - [ ] Historical price storage (DB currently upserts, needs append-only history)
 - [ ] Data validation pipeline (cross-check against official pricing pages)
 
-### Phase 1 — MVP Product (~40% done)
-- [x] Live pricing dashboard (API + GPU tables, stats bar)
+### Phase 1 — MVP Product (~75% done)
+- [x] ~~Live pricing dashboard~~ (replaced by Scenario Builder)
 - [x] Breakeven calculator (API vs GPU, server-side)
-- [x] Row selection feeds into calculator
-- [x] Search, provider filter, quality filter, column sorting, pagination
-- [x] Data freshness indicators + last sync timestamps
-- [ ] **Scenario Builder** — full workload profiling
-  - [ ] Inputs: tokens/day, latency SLA, compliance needs, team size
-  - [ ] Side-by-side: cloud API vs rented GPU vs owned metal
-  - [ ] Utilization rates, engineering overhead multipliers
-  - [ ] Scaling curves / projection charts
+- [x] **Scenario Builder** — full workload profiling
+  - [x] 3 Quick Scenarios: Customer Support Chatbot, Knowledge Base, Document Analysis
+  - [x] Business-friendly inputs (conversations, replies, employees, pages)
+  - [x] Model strength selector (Frontier/Strong/Good/Budget)
+  - [x] GPU selector filtered by VRAM requirements, sorted by region proximity
+  - [x] Browser geolocation for auto-detecting nearest GPU region
+  - [x] Side-by-side: Cloud API vs Rented GPU vs Owned Hardware
+  - [x] GPU count scaling based on throughput per quality tier
+  - [x] Utilization rates, engineering overhead multipliers
+  - [x] Cost breakdown with transparent math
+- [x] **Advanced Scenario Builder** — fine-grained controls
+  - [x] Tokens/day with presets, input/output ratio slider
+  - [x] Searchable model selector (300+ models)
+  - [x] Searchable GPU selector with type filters
+  - [x] Team size, utilization rate, latency requirements
 - [ ] Prompt caching discounts, batch API rates, volume tiers
 - [ ] Model benchmarks (HuggingFace Leaderboard via Parquet)
   - [ ] Quality-adjusted cost metric ($/benchmark-point)
@@ -91,14 +99,15 @@ design/                    # Mockups, design docs, visual references
 src/
   instrumentation.ts       # Next.js hook — starts scheduler on server boot
   app/
-    page.tsx               # Dashboard (stats, tables, calculator)
+    page.tsx               # Homepage: Quick Scenarios + Cost Comparison + Advanced Builder
     layout.tsx             # Root layout
     globals.css            # Global styles
     api/
       models/route.ts      # GET /api/models — API pricing with filtering
       gpus/route.ts        # GET /api/gpus — GPU offers with filtering
       stats/route.ts       # GET /api/stats — summary stats
-      breakeven/route.ts   # GET /api/breakeven — calculator logic
+      breakeven/route.ts   # GET /api/breakeven — simple calculator logic
+      scenario/route.ts    # GET /api/scenario — full scenario comparison (3 deployment options)
   lib/
     db.ts                  # SQLite connection + schema init
     quality-tiers.ts       # Model → quality tier mapping
