@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 // ---- Types ----
 interface AnalysisResult {
@@ -59,8 +60,73 @@ const INDUSTRIES = [
   { id: "finance", name: "Finance", icon: "📊" },
 ];
 
+// ---- Auth Modal ----
+function AuthModal({ onClose }: { onClose: () => void }) {
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("register");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setAuthError("");
+    const err = mode === "register"
+      ? await register(email, password, name)
+      : await login(email, password);
+    if (err) { setAuthError(err); setSubmitting(false); }
+    else onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold mb-1">{mode === "register" ? "Create your account" : "Welcome back"}</h2>
+        <p className="text-sm text-gray-400 mb-6">{mode === "register" ? "Save analyses and track your AI spend over time" : "Sign in to access your saved data"}</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "register" && (
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Your name</label>
+              <input className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50" value={name} onChange={(e) => setName(e.target.value)} placeholder="James Hartwell" />
+            </div>
+          )}
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
+            <input type="email" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="james@hartwell.com" required />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">Password</label>
+            <input type="password" className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" required minLength={8} />
+          </div>
+
+          {authError && <div className="text-sm text-red-500">{authError}</div>}
+
+          <button type="submit" disabled={submitting} className="w-full py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50">
+            {submitting ? "..." : mode === "register" ? "Create account" : "Sign in"}
+          </button>
+        </form>
+
+        <div className="text-center mt-4 text-sm text-gray-400">
+          {mode === "register" ? (
+            <>Already have an account? <button onClick={() => setMode("login")} className="text-blue-600 font-medium">Sign in</button></>
+          ) : (
+            <>New here? <button onClick={() => setMode("register")} className="text-blue-600 font-medium">Create account</button></>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- Main Page ----
 export default function HomePage() {
+  const { user, firm, loading: authLoading, logout, saveFirm } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
+
   // AI Intake state
   const [description, setDescription] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
@@ -68,6 +134,26 @@ export default function HomePage() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [scenario, setScenario] = useState<ScenarioResult | null>(null);
   const [error, setError] = useState("");
+
+  // Saved scenarios
+  const [savedScenarios, setSavedScenarios] = useState<{ id: number; name: string; created_at: string }[]>([]);
+  const [saveName, setSaveName] = useState("");
+  const [showSaveInput, setShowSaveInput] = useState(false);
+
+  // Pre-fill from firm profile
+  useEffect(() => {
+    if (firm?.ai_description && !description) {
+      setDescription(firm.ai_description);
+      if (firm.industry) setSelectedIndustry(firm.industry);
+    }
+  }, [firm]);
+
+  // Load saved scenarios
+  useEffect(() => {
+    if (user && firm) {
+      fetch("/api/scenarios").then((r) => r.json()).then((d) => setSavedScenarios(d.scenarios || [])).catch(() => {});
+    }
+  }, [user, firm]);
 
   // Advanced builder state
   const [advTokens, setAdvTokens] = useState("10000000");
@@ -112,6 +198,19 @@ export default function HomePage() {
 
       const scenRes = await fetch(`/api/scenario?${p}`);
       if (scenRes.ok) setScenario(await scenRes.json());
+
+      // Auto-save firm profile if logged in
+      if (user) {
+        saveFirm({
+          name: firm?.name || "My Company",
+          industry: data.industry,
+          team_size: data.team_size,
+          current_product: data.current_product || undefined,
+          current_price_per_seat: data.current_price_per_seat || undefined,
+          current_monthly_spend: data.current_monthly_spend || undefined,
+          ai_description: description,
+        });
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -137,11 +236,28 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-        <div className="text-xl font-bold tracking-tight">Inference<span className="text-blue-600">IQ</span></div>
-        <p className="text-sm text-gray-400">AI Spend Optimization</p>
-        <div className="w-32" />
+        <div className="text-xl font-bold tracking-tight">Reasons<span className="text-blue-600">IQ</span></div>
+        {firm ? (
+          <p className="text-sm text-gray-600 font-medium">{firm.name}</p>
+        ) : (
+          <p className="text-sm text-gray-400">AI Spend Optimization</p>
+        )}
+        <div>
+          {authLoading ? null : user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">{user.name || user.email}</span>
+              <button onClick={logout} className="text-xs text-gray-400 hover:text-gray-600">Sign out</button>
+            </div>
+          ) : (
+            <button onClick={() => setShowAuth(true)} className="px-4 py-1.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50">
+              Sign in
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Hero — AI Intake */}
@@ -381,11 +497,75 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* Save / Sign up prompt */}
+          <div className="mt-6">
+            {user ? (
+              <div className="flex items-center gap-3">
+                {showSaveInput ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                      placeholder="Name this scenario (e.g., Contract Review Q3)"
+                      value={saveName}
+                      onChange={(e) => setSaveName(e.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!saveName.trim() || !analysis) return;
+                        await fetch("/api/scenarios", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ name: saveName, params: analysis, result: scenario }),
+                        });
+                        setShowSaveInput(false);
+                        setSaveName("");
+                        // Refresh list
+                        const res = await fetch("/api/scenarios");
+                        const d = await res.json();
+                        setSavedScenarios(d.scenarios || []);
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                    >
+                      Save
+                    </button>
+                    <button onClick={() => setShowSaveInput(false)} className="text-sm text-gray-400">Cancel</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowSaveInput(true)} className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50">
+                    Save this scenario
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button onClick={() => setShowAuth(true)} className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50">
+                Sign up to save this analysis
+              </button>
+            )}
+          </div>
+
+          {/* Saved scenarios list */}
+          {savedScenarios.length > 0 && (
+            <div className="mt-6 bg-white border border-gray-200 rounded-xl p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Saved Scenarios</h3>
+              <div className="space-y-2">
+                {savedScenarios.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div>
+                      <div className="text-sm font-medium">{s.name}</div>
+                      <div className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Advanced Scenario Builder */}
-      <div className="max-w-7xl mx-auto px-8 pb-8">
+      {/* Advanced Scenario Builder — only shown after analysis */}
+      {analysis && <div className="max-w-7xl mx-auto px-8 pb-8">
         <div className="border-t border-gray-200 pt-8 mb-6">
           <h2 className="text-lg font-bold">Advanced Scenario Builder</h2>
           <p className="text-sm text-gray-400 mt-1">Fine-tune every parameter for a custom analysis</p>
@@ -458,12 +638,12 @@ export default function HomePage() {
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-white px-8 py-4 flex justify-between text-xs text-gray-400">
         <span>Data: OpenRouter API (300+ models) · Vast.ai (380+ GPU offers) · Real-time pricing</span>
-        <span>InferenceIQ</span>
+        <span>ReasonsIQ</span>
       </footer>
     </div>
   );

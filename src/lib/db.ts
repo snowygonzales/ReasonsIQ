@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "inferenceiq.db");
+const DB_PATH = path.join(process.cwd(), "reasonsiq.db");
 
 let _db: Database.Database | null = null;
 
@@ -67,5 +67,45 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_api_models_input_price ON api_models(input_price_per_mtok);
     CREATE INDEX IF NOT EXISTS idx_gpu_offers_gpu_model ON gpu_offers(gpu_model);
     CREATE INDEX IF NOT EXISTS idx_gpu_offers_price ON gpu_offers(price_per_hour);
+
+    -- User accounts
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      name TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Firm profiles (persistent company data)
+    CREATE TABLE IF NOT EXISTS firms (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      name TEXT NOT NULL,
+      industry TEXT,
+      team_size INTEGER,
+      current_product TEXT,
+      current_price_per_seat REAL,
+      current_monthly_spend REAL,
+      ai_description TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Saved scenarios
+    CREATE TABLE IF NOT EXISTS saved_scenarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      firm_id INTEGER NOT NULL REFERENCES firms(id),
+      name TEXT NOT NULL,
+      params TEXT NOT NULL,
+      result TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_firms_user ON firms(user_id);
+    CREATE INDEX IF NOT EXISTS idx_scenarios_firm ON saved_scenarios(firm_id);
   `);
 }

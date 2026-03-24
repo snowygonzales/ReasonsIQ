@@ -1,4 +1,4 @@
-# InferenceIQ
+# ReasonsIQ
 
 AI spend optimization platform — helps enterprises understand whether they're overpaying for AI and what alternatives exist. Natural language intake, industry-specific templates, real-time pricing data.
 
